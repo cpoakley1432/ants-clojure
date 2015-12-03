@@ -17,7 +17,8 @@
 (defn create-ants []
   (for [i (range 0 ant-count)]
     {:x (rand-int width)
-     :y (rand-int height)}))
+     :y (rand-int height)
+     :color Color/BLACK}))
 
 (defn random-step[]
   (- (* 2 (rand)) 1))
@@ -27,11 +28,19 @@
   (assoc ant :x (+(random-step)(:x ant))
              :y (+(random-step)(:y ant))))
 
+(defn aggravate-ant [ant]
+  (let [filter-ants (filter (fn [ant2]
+                              (and (<= (Math/abs (- (:x ant) (:x ant2))) 10)
+                                   (<= (Math/abs (- (:y ant) (:y ant2))) 10)))
+                            (deref ants))]
+    (if (> (count filter-ants) 1)
+      (assoc ant :color Color/RED)
+      (assoc ant :color Color/BLACK))))
 
 (defn draw-ants [context]
   (.clearRect context 0 0 width height)
   (doseq [ant (deref ants)]
-    (.setFill context Color/RED)
+    (.setFill context (:color ant))
     (.fillOval context (:x ant) (:y ant) 5 5)))
 
 (defn fps[now]
@@ -49,7 +58,7 @@
                 (handle [now]
                   (.setText fps-label(str(fps now)))
                   (reset! last-timestamp now)
-                  (reset! ants(pmap move-ant (deref ants)))
+                  (reset! ants (pmap aggravate-ant (pmap move-ant (deref ants))))
                   (draw-ants context)))]
 
     (reset! ants (create-ants))
